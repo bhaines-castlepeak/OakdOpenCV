@@ -32,22 +32,12 @@
 #define WLS_SIGMA (1.0)
 
 /* -------------------------------------------------------------------------
- * STRUCTS
- * ------------------------------------------------------------------------- */
-
-// A simple pose structure containing position vector and rotation matrix.
-typedef struct _Pose {
-    cv::Mat position;
-    cv::Mat rotation;
-} Pose;
-
-/* -------------------------------------------------------------------------
  * MAIN
  * ------------------------------------------------------------------------- */
 
 int main(int argc, char *argv[]) {
 
-    std::cout << "OAK-D/ORB_SLAM3 Experiment" << std::endl;
+    std::cout << "OAK-D/OpenCV Experiment" << std::endl;
 
     // Create the pipeline that we're going to build. Pipelines are depthai's
     // way of chaining up different series or parallel process, sort of like
@@ -138,35 +128,6 @@ int main(int argc, char *argv[]) {
     // TODO: actually calculate these
     cv::Mat R1, R2, P1, P2, Q;
 
-    // Create the SLAM system. First argument is path to the ORB_SLAM3 vocab
-    // file. The second is the path to the settings file for this particular
-    // camera setup. The values in this file were taken from what's printed out
-    // of `depthai_demo.py`.
-    //
-    // While the OAK-D does have an IMU we can't use it right now, but support
-    // is coming soon! For now just use stereo mode for SLAM, which isn't as
-    // accurate as IMU_STEREO.
-    //
-    // The last input tells the system to display it's UI.
-    ORB_SLAM3::System SLAM(
-        "ORB_SLAM3/Vocabulary/ORBvoc.txt",
-        "oak_d_orbslam_settings.yaml",
-        ORB_SLAM3::System::STEREO, 
-        true
-    );
-
-    // Formatter, for printing out matrices in a reasonable way.
-    cv::Ptr<cv::Formatter> fmt = cv::Formatter::get(cv::Formatter::FMT_DEFAULT);
-    fmt->set64fPrecision(3);
-    fmt->set32fPrecision(3);
-
-    // We also want somewhere to store our pose data
-    Pose pose;
-
-    // The time of each frame is required for SLAM, so we take an epoch time
-    // (i.e. our start time) now
-    auto slam_epoch = std::chrono::steady_clock::now();
-
     // Now for the main loop
     while (1) {
         // Read the output frames from the OAK-D. These are blocking calls, so
@@ -179,46 +140,6 @@ int main(int argc, char *argv[]) {
         auto rectif_left = imgframe_to_mat(rectif_left_frame);
         auto rectif_right = imgframe_to_mat(rectif_right_frame);
         auto disp_map = imgframe_to_mat(disp_map_frame);
-
-        // Get the time between the epoch and now, allowing us to get a
-        // timestamp (in seconds) to pass into the slam system.
-        auto elapsed_time = std::chrono::steady_clock::now() - slam_epoch;
-        double frame_timestamp_s = elapsed_time.count() / 1000000000.0;
-
-        std::cout << std::setprecision(4) << frame_timestamp_s << ": ";
-
-        // Pass the images into the SLAM system. This produces a matrix with
-        // the pose information of the camera.
-        cv::Mat raw_pose = SLAM.TrackStereo(
-            rectif_left,
-            rectif_right,
-            frame_timestamp_s
-        );
-
-        // The output pose may be empty if the system was unable to track the
-        // movement, so only get position and rotation if pose isn't empty. We
-        // also put this info an a localisation fix available flag for later
-        // use. 
-        bool loc_fix_available = !raw_pose.empty();
-        if (loc_fix_available) {
-            // The pose matrix is a 4x4 extrinsic matrix, with the form:
-            // [R_3x3 T_3x1; [0 0 0 1]], we can find the camera position with 
-            // C = -R'T (R' = R transpose).
-            pose.rotation = raw_pose(cv::Rect(0, 0, 3, 3));
-            cv::Mat T = raw_pose(cv::Rect(3, 0, 1, 3));
-            pose.position = -pose.rotation.t()*T;
-
-            // Print the updated position, but transpose it so that instead of
-            // a column vector we have a row vector, which is easier to read.
-            std::cout << 
-                "position: " << 
-                fmt->format(pose.position.t()) << 
-                std::endl;
-        }
-        else {
-            // If we didn't get a pose update log it.
-            std::cout << "no pose update" << std::endl;
-        }
 
         // The raw disparity map is flipped, since we flipped the rectified
         // images, so we must flip it as well.
@@ -240,9 +161,6 @@ int main(int argc, char *argv[]) {
             break;
         }
     }
-
-    // Stop all SLAM threads
-    SLAM.Shutdown();
 
     return EXIT_SUCCESS;
 }
