@@ -155,7 +155,9 @@ int main(int argc, char *argv[]) {
     cv::Mat R1, R2, P1, P2, Q;
 
     // allocate a large image for a panel of sub-images
-    cv::Mat PanelImage;
+    cv::Mat stereoimage, panelimage;
+    // allocate left & right color images for the panel
+    cv::Mat color_left, color_right;
 
     // Now for the main loop
     while (true) {
@@ -185,10 +187,12 @@ int main(int argc, char *argv[]) {
         cv::applyColorMap(disp_map, color_disparity, cv::COLORMAP_JET);
         // cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
         cv::imshow("disparity", color_disparity);
-        // cv::imshow("left", rectif_left);
-        // cv::imshow("right", rectif_right);
-        cv::hconcat(rectif_left, rectif_right, PanelImage);
-        cv::imshow("stereo", PanelImage);
+        // convert left & right images to color so they can be combined in a display
+        cv::cvtColor(rectif_left, color_left, cv::COLOR_GRAY2BGR);
+        cv::cvtColor(rectif_right, color_right, cv::COLOR_GRAY2BGR);
+        cv::hconcat(color_left, color_right, stereoimage);
+        cv::vconcat(stereoimage, color_disparity, panelimage);
+        cv::imshow("stereo", panelimage);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
