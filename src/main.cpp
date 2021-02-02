@@ -57,24 +57,14 @@ int main(int argc, char *argv[]) {
     cv::Mat Image;
     bool videoOn = false; // tracks if we are presently capturing images or not
     bool videoisOpen = false;
-    int CODEC = 0x34363258; //X264 encoder
-    // Transform CODEC from int to char via Bitwise operators
-    char Char_CODEC[] = {(char)(CODEC & 0XFF),
-                         (char)((CODEC & 0XFF00) >> 8),
-                         (char)((CODEC & 0XFF0000) >> 16),
-                         (char)((CODEC & 0XFF000000) >> 24), 0};
+    // setup the video encoding format (system dependant)
+    int FourCC = cv::VideoWriter::fourcc('M','J','P','G'); 
     
     if(!parser.check()) {
         parser.printErrors();
         return 0;
     }
    
-    std::cout << "Saving output video with the following:" << std::endl;
-    std::cout << "Video: " << Path + VideoName << std::endl;
-    std::cout << "CODEC: " << " 0x" << std::hex << std::uppercase << CODEC 
-        << std::nouppercase << std::dec << ", " << CODEC << ", " 
-        << std::string(Char_CODEC) << std::endl;
-
     // Create the pipeline that we're going to build. Pipelines are depthai's
     // way of chaining up different series or parallel process, sort of like
     // gstreamer. 
@@ -192,8 +182,8 @@ int main(int argc, char *argv[]) {
         cv::applyColorMap(disp_map, color_disparity, cv::COLORMAP_JET);
         // cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
         cv::imshow("disparity", color_disparity);
-        cv::imshow("left", rectif_left);
-        cv::imshow("right", rectif_right);
+        // cv::imshow("left", rectif_left);
+        // cv::imshow("right", rectif_right);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
@@ -208,7 +198,9 @@ int main(int argc, char *argv[]) {
             // if video file hasn't been opened already, open it
             if (!videoisOpen) {
                 // setup video file
-                Video.open(Path + VideoName, CODEC, FramesPerSecond, color_disparity.size(), isColor);
+                Video.open(Path + VideoName, FourCC, FramesPerSecond, color_disparity.size(), isColor);
+                std::cout << "Saving output video with the following:" << std::endl;
+                std::cout << "Video: " << Path + VideoName << std::endl;
                 if (!Video.isOpened()) {
                     std::cout  << "Could not open the video file for writing." << std::endl;
                     return -1;
