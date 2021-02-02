@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
     cv::Mat R1, R2, P1, P2, Q;
 
     // allocate a large image for a panel of sub-images
-    cv::Mat stereoimage, panelimage;
+    cv::Mat stereoimage, disparityimage, panelimage;
     // allocate left & right color images for the panel
     cv::Mat color_left, color_right;
 
@@ -185,14 +185,16 @@ int main(int argc, char *argv[]) {
         // directly with disparity.
         cv::Mat color_disparity;
         cv::applyColorMap(disp_map, color_disparity, cv::COLORMAP_JET);
-        // cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
-        cv::imshow("disparity", color_disparity);
+        cv::Mat blank_disparity(color_disparity.size(),color_disparity.type(), cv::Scalar(0,0,0));
         // convert left & right images to color so they can be combined in a display
         cv::cvtColor(rectif_left, color_left, cv::COLOR_GRAY2BGR);
         cv::cvtColor(rectif_right, color_right, cv::COLOR_GRAY2BGR);
         cv::hconcat(color_left, color_right, stereoimage);
-        cv::vconcat(stereoimage, color_disparity, panelimage);
-        cv::imshow("stereo", panelimage);
+        // create a horizontal image with the color disparity on the left
+        cv::hconcat(color_disparity, blank_disparity, disparityimage);
+        // combine the stereo image and disparity images into a single panel
+        cv::vconcat(stereoimage, disparityimage, panelimage);
+        cv::imshow("panel", panelimage);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
