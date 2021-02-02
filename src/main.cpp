@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>  // Video write
 // FIX ME: missing disparity filter -- fix later.
 // #include <opencv2/ximgproc/disparity_filter.hpp>
 //#include "System.h"
@@ -14,14 +15,65 @@
 #include "depthai/depthai.hpp"
 #include "util.hpp"
 
+// Camera frames per second
+#define FramesPerSecond (20.0)
+#define isColor (true)
 
 // WLS parameters, taken from the OpenCV WLS filter docs recommended values.
 #define WLS_LAMBDA (8000)
 #define WLS_SIGMA (1.0)
 
+// Items for parsing input parameters
+const cv::String about =
+    "Capture camera images, display and save video   \n"
+    "Press <ESC> to exit                             \n"
+    "Press <SPACE> to start or stop capturing video  \n"
+    ;
+
+const cv::String keys  =
+    "{path       | ./video/      | path to save images. }"
+    "{filename   | testvideo.avi | Output file name }"
+    ;
+
+
 int main(int argc, char *argv[]) {
 
     std::cout << "OAK-D/OpenCV Experiment" << std::endl;
+
+    // get the video file output name using parser 
+    cv::CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
+    
+    if(argc < 2) {
+        parser.printMessage();
+        return 0;
+    }
+    
+    std::string Path = parser.get<std::string>("path");
+    std::string VideoName = parser.get<std::string>("filename");
+    std::string FullFilename = Path + VideoName;
+    std::string WindowName = "Video Image";
+    cv::VideoWriter Video;
+    cv::Mat Image;
+    bool videoOn = false; // tracks if we are presently capturing images or not
+    bool videoisOpen = false;
+    int CODEC = 0x34363258; //X264 encoder
+    // Transform CODEC from int to char via Bitwise operators
+    char Char_CODEC[] = {(char)(CODEC & 0XFF),
+                         (char)((CODEC & 0XFF00) >> 8),
+                         (char)((CODEC & 0XFF0000) >> 16),
+                         (char)((CODEC & 0XFF000000) >> 24), 0};
+    
+    if(!parser.check()) {
+        parser.printErrors();
+        return 0;
+    }
+   
+    std::cout << "Saving output video with the following:" << std::endl;
+    std::cout << "Video: " << Path + VideoName << std::endl;
+    std::cout << "CODEC: " << " 0x" << std::hex << std::uppercase << CODEC 
+        << std::nouppercase << std::dec << ", " << CODEC << ", " 
+        << std::string(Char_CODEC) << std::endl;
 
     // Create the pipeline that we're going to build. Pipelines are depthai's
     // way of chaining up different series or parallel process, sort of like
@@ -63,7 +115,7 @@ int main(int argc, char *argv[]) {
     mono_right->setResolution(
         dai::MonoCameraProperties::SensorResolution::THE_720_P
     );
-    mono_right->setFps(20.0);
+    mono_right->setFps(FramesPerSecond);
 
     // Now we set the stereo node to output rectified images and disp maps. We
     // also set the rectify frames to not be mirrored, and to use black to fill
@@ -113,7 +165,7 @@ int main(int argc, char *argv[]) {
     cv::Mat R1, R2, P1, P2, Q;
 
     // Now for the main loop
-    while (1) {
+    while (true) {
         // Read the output frames from the OAK-D. These are blocking calls, so
         // they will wait until there's data available.
         auto rectif_left_frame = rectif_left_queue->get<dai::ImgFrame>();
@@ -123,7 +175,7 @@ int main(int argc, char *argv[]) {
         // Convert the frames into opencv images
         cv::Mat rectif_left = imgframe_to_mat(rectif_left_frame);
         cv::Mat rectif_right = imgframe_to_mat(rectif_right_frame);
-        auto disp_map = imgframe_to_mat(disp_map_frame);
+        cv::Mat disp_map = imgframe_to_mat(disp_map_frame);
 
         // The raw disparity map is flipped, since we flipped the rectified
         // images, so we must flip it as well.
@@ -136,18 +188,44 @@ int main(int argc, char *argv[]) {
         // Apply a colormap to the filtered disparity map, but don't normalise
         // it. Normalising the map will mean that the color doesn't correspond
         // directly with disparity.
-        cv::Mat colour_disp;
-        cv::applyColorMap(disp_map, colour_disp, cv::COLORMAP_JET);
+        cv::Mat color_disparity;
+        cv::applyColorMap(disp_map, color_disparity, cv::COLORMAP_JET);
         // cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
-        cv::imshow("disparity", colour_disp);
+        cv::imshow("disparity", color_disparity);
         cv::imshow("left", rectif_left);
         cv::imshow("right", rectif_right);
 
-        // See if q pressed, if so quit
-        if (cv::waitKey(1) == 'q') {
-            break;
+        // Display images and see if <ESC> or <SPACE> pressed
+        char key = (char)cv::waitKey(1);
+        // <ESC> then quit
+        if (key == 27) break;
+        // <SPACE> then toggle video on or off
+        if (key == ' ') {
+            videoOn = !videoOn;
+        }
+
+        if (videoOn) {
+            // if video file hasn't been opened already, open it
+            if (!videoisOpen) {
+                // setup video file
+                Video.open(Path + VideoName, CODEC, FramesPerSecond, color_disparity.size(), isColor);
+                if (!Video.isOpened()) {
+                    std::cout  << "Could not open the video file for writing." << std::endl;
+                    return -1;
+                } else {
+                    std::cout << "Video file is open" << std::endl;
+                    videoisOpen = true;
+                }
+            }
+            // video is on, capture the frame
+            Video << color_disparity;
         }
     }
+
+    // close all the windows
+    cv::destroyAllWindows();
+    // if the video is open, close the video file
+    if (videoisOpen) Video.release();
 
     return EXIT_SUCCESS;
 }
