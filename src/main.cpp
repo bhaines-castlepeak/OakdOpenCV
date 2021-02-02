@@ -1,40 +1,23 @@
-/**
- * @file main.cpp
- * @author Duncan Hamill (duncanrhamill@googlemail.com)
- * @brief OAK-D/ORB_SLAM3 Experiments main file.
- * 
- * @version 0.1
- * @date 2021-01-13
- * 
- * @copyright Copyright (c) Duncan Hamill 2021
- */
-
-/* -------------------------------------------------------------------------
- * INCLUDES
- * ------------------------------------------------------------------------- */
+//
+//  @file main.cpp
+//
+//  Created by Bob Haines on 2/2/21
+//
+//
 
 #include <iostream>
-
 #include <opencv2/opencv.hpp>
 // FIX ME: missing disparity filter -- fix later.
 // #include <opencv2/ximgproc/disparity_filter.hpp>
-
 //#include "System.h"
 
 #include "depthai/depthai.hpp"
-#include "util.h"
+#include "util.hpp"
 
-/* -------------------------------------------------------------------------
- * CONSTANTS
- * ------------------------------------------------------------------------- */
 
 // WLS parameters, taken from the OpenCV WLS filter docs recommended values.
 #define WLS_LAMBDA (8000)
 #define WLS_SIGMA (1.0)
-
-/* -------------------------------------------------------------------------
- * MAIN
- * ------------------------------------------------------------------------- */
 
 int main(int argc, char *argv[]) {
 
