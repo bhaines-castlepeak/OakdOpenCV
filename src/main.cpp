@@ -16,9 +16,10 @@
 #include <iostream>
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/ximgproc/disparity_filter.hpp>
+// FIX ME: missing disparity filter -- fix later.
+// #include <opencv2/ximgproc/disparity_filter.hpp>
 
-#include "System.h"
+//#include "System.h"
 
 #include "depthai/depthai.hpp"
 #include "util.h"
@@ -116,11 +117,11 @@ int main(int argc, char *argv[]) {
     auto rectif_right_queue = device.getOutputQueue("rectified_right", 8, false);
     auto disp_queue = device.getOutputQueue("disparity", 8, false);
     
-    // Create the WLS (weighted least squares) filter, which we use to improve
-    // the quality of our disparity map. Also set the lambda and sigma values
-    auto wls_filter = cv::ximgproc::createDisparityWLSFilterGeneric(false);
-    wls_filter->setLambda(WLS_LAMBDA);
-    wls_filter->setSigmaColor(WLS_SIGMA);
+    // // Create the WLS (weighted least squares) filter, which we use to improve
+    // // the quality of our disparity map. Also set the lambda and sigma values
+    // auto wls_filter = cv::ximgproc::createDisparityWLSFilterGeneric(false);
+    // wls_filter->setLambda(WLS_LAMBDA);
+    // wls_filter->setSigmaColor(WLS_SIGMA);
 
     // To use OpenCV's reprojectImageTo3D we need a Q matrix, which is obtained
     // from stereoRectify. This means we'll have to extract some data from the
@@ -137,24 +138,27 @@ int main(int argc, char *argv[]) {
         auto disp_map_frame = disp_queue->get<dai::ImgFrame>();
 
         // Convert the frames into opencv images
-        auto rectif_left = imgframe_to_mat(rectif_left_frame);
-        auto rectif_right = imgframe_to_mat(rectif_right_frame);
+        cv::Mat rectif_left = imgframe_to_mat(rectif_left_frame);
+        cv::Mat rectif_right = imgframe_to_mat(rectif_right_frame);
         auto disp_map = imgframe_to_mat(disp_map_frame);
 
         // The raw disparity map is flipped, since we flipped the rectified
         // images, so we must flip it as well.
         cv::flip(disp_map, disp_map, 1);
 
-        // Filter the disparity map
-        cv::Mat filtered_disp_map;
-        wls_filter->filter(disp_map, rectif_right, filtered_disp_map);
+        // // Filter the disparity map
+        // cv::Mat filtered_disp_map;
+        // wls_filter->filter(disp_map, rectif_right, filtered_disp_map);
 
         // Apply a colormap to the filtered disparity map, but don't normalise
         // it. Normalising the map will mean that the color doesn't correspond
         // directly with disparity.
         cv::Mat colour_disp;
-        cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
+        cv::applyColorMap(disp_map, colour_disp, cv::COLORMAP_JET);
+        // cv::applyColorMap(filtered_disp_map, colour_disp, cv::COLORMAP_JET);
         cv::imshow("disparity", colour_disp);
+        cv::imshow("left", rectif_left);
+        cv::imshow("right", rectif_right);
 
         // See if q pressed, if so quit
         if (cv::waitKey(1) == 'q') {
