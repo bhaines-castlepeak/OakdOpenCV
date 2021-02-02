@@ -154,6 +154,9 @@ int main(int argc, char *argv[]) {
     // TODO: actually calculate these
     cv::Mat R1, R2, P1, P2, Q;
 
+    // allocate a large image for a panel of sub-images
+    cv::Mat PanelImage;
+
     // Now for the main loop
     while (true) {
         // Read the output frames from the OAK-D. These are blocking calls, so
@@ -184,6 +187,8 @@ int main(int argc, char *argv[]) {
         cv::imshow("disparity", color_disparity);
         // cv::imshow("left", rectif_left);
         // cv::imshow("right", rectif_right);
+        cv::hconcat(rectif_left, rectif_right, PanelImage);
+        cv::imshow("stereo", PanelImage);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
