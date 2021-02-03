@@ -9,7 +9,7 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>  // Video write
 // FIX ME: missing disparity filter -- fix later.
-// #include <opencv2/ximgproc/disparity_filter.hpp>
+#include <opencv2/ximgproc/disparity_filter.hpp>
 //#include "System.h"
 
 #include "depthai/depthai.hpp"
@@ -142,11 +142,11 @@ int main(int argc, char *argv[]) {
     auto rectif_right_queue = device.getOutputQueue("rectified_right", 8, false);
     auto disp_queue = device.getOutputQueue("disparity", 8, false);
     
-    // // Create the WLS (weighted least squares) filter, which we use to improve
-    // // the quality of our disparity map. Also set the lambda and sigma values
-    // auto wls_filter = cv::ximgproc::createDisparityWLSFilterGeneric(false);
-    // wls_filter->setLambda(WLS_LAMBDA);
-    // wls_filter->setSigmaColor(WLS_SIGMA);
+    // Create the WLS (weighted least squares) filter, which we use to improve
+    // the quality of our disparity map. Also set the lambda and sigma values
+    auto wls_filter = cv::ximgproc::createDisparityWLSFilterGeneric(false);
+    wls_filter->setLambda(WLS_LAMBDA);
+    wls_filter->setSigmaColor(WLS_SIGMA);
 
     // To use OpenCV's reprojectImageTo3D we need a Q matrix, which is obtained
     // from stereoRectify. This means we'll have to extract some data from the
@@ -176,25 +176,28 @@ int main(int argc, char *argv[]) {
         // images, so we must flip it as well.
         cv::flip(disp_map, disp_map, 1);
 
-        // // Filter the disparity map
-        // cv::Mat filtered_disp_map;
-        // wls_filter->filter(disp_map, rectif_right, filtered_disp_map);
+        // Filter the disparity map
+        cv::Mat filtered_disp_map;
+        wls_filter->filter(disp_map, rectif_right, filtered_disp_map);
+        // create bgr version of disp_map for display
+        cv::Mat noisy_disparity;
+        cv::cvtColor(disp_map, noisy_disparity, cv::COLOR_GRAY2BGR);
 
         // Apply a colormap to the filtered disparity map, but don't normalise
         // it. Normalising the map will mean that the color doesn't correspond
         // directly with disparity.
         cv::Mat color_disparity;
-        cv::applyColorMap(disp_map, color_disparity, cv::COLORMAP_JET);
-        cv::Mat blank_disparity(color_disparity.size(),color_disparity.type(), cv::Scalar(0,0,0));
+        cv::applyColorMap(filtered_disp_map, color_disparity, cv::COLORMAP_JET);
+        //cv::Mat blank_disparity(color_disparity.size(),color_disparity.type(), cv::Scalar(0,0,0));
         // convert left & right images to color so they can be combined in a display
         cv::cvtColor(rectif_left, color_left, cv::COLOR_GRAY2BGR);
         cv::cvtColor(rectif_right, color_right, cv::COLOR_GRAY2BGR);
         cv::hconcat(color_left, color_right, stereoimage);
         // create a horizontal image with the color disparity on the left
-        cv::hconcat(color_disparity, blank_disparity, disparityimage);
+        cv::hconcat(noisy_disparity, color_disparity, disparityimage);
         // combine the stereo image and disparity images into a single panel
         cv::vconcat(stereoimage, disparityimage, panelimage);
-        cv::imshow("panel", panelimage);
+        cv::imshow("panel", color_disparity);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
