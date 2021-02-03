@@ -26,5 +26,5 @@ make -j$(nproc)
 4. From the root of this repo run the experiment (will need to create the video directory):
 
 ```#!/bin/bash
-./build/bin/oakd_opencv --filename=test.avi --path=./video/
+./bin/oakd_opencv --filename=test.avi --path=./video/
 ```
