@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
             // if video file hasn't been opened already, open it
             if (!videoisOpen) {
                 // setup video file
-                Video.open(Path + VideoName, FourCC, FramesPerSecond, color_disparity.size(), isColor);
+                Video.open(Path + VideoName, FourCC, FramesPerSecond, panelimage.size(), isColor);
                 std::cout << "Saving output video with the following:" << std::endl;
                 std::cout << "Video: " << Path + VideoName << std::endl;
                 if (!Video.isOpened()) {
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
                 }
             }
             // video is on, capture the frame
-            Video << color_disparity;
+            Video << panelimage;
         }
     }
 
