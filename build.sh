@@ -135,25 +135,24 @@ sudo apt -y install \
 #         groupmod --gid 1000 $USERNAME
 
 # ENV DEBIAN_FRONTEND noninteractive
-# RUN apt-get update && apt-get install -y --no-install-recommends \
-#         sudo \
-#         less \
-#         emacs \
-#         build-essential \
-#         cmake \
-#         git \
-#         tmux \
-#         bash-completion \
-#         command-not-found \
-#         software-properties-common \
-#         xsel \
-#         xdg-user-dirs \
-#         wget \
-#         curl \
-#         usbutils \
-#         udev \
-#         && \
-#     apt-get clean && \
+sudo apt install -y \
+        less \
+        emacs \
+        build-essential \
+        cmake \
+        git \
+        tmux \
+        bash-completion \
+        command-not-found \
+        software-properties-common \
+        xsel \
+        xdg-user-dirs \
+        wget \
+        curl \
+        usbutils \
+        udev \
+        && \
+    apt-get clean && \
 #     rm -rf /var/lib/apt/lists/*
 
 # # https://github.com/luxonis/depthai-docker/blob/master/Dockerfile-depthai#L11
