@@ -13,7 +13,7 @@ cd depthai-core
 git submodule update --init --recursive
 ```
 
-2.  Make certain the depthai-core version is depthai-core @ f0c3f94.  This version is unreleased and undocumented but has interfaces for depthai-core to OpenCV.
+2. Make certain the depthai-core version is depthai-core @ f0c3f94.  This version is unreleased and undocumented but has interfaces for depthai-core to OpenCV.
 
 3. Build the project:
 
