@@ -50,10 +50,11 @@ int main(int argc, char *argv[]) {
     }
     
     std::string Path = parser.get<std::string>("path");
+    std::string PathRGB = Path + "/rgb/";
+    std::string PathD = Path + "/depth/";
     std::string VideoName = parser.get<std::string>("filename");
-    std::string FullFilename = Path + VideoName;
-    std::string WindowName = "Video Image";
-    cv::VideoWriter Video;
+    cv::VideoWriter VideoRGB;
+    cv::VideoWriter VideoD;
     cv::Mat Image;
     bool videoOn = false; // tracks if we are presently capturing images or not
     bool videoisOpen = false;
@@ -155,9 +156,11 @@ int main(int argc, char *argv[]) {
     cv::Mat R1, R2, P1, P2, Q;
 
     // allocate a large image for a panel of sub-images
-    cv::Mat stereoimage, disparityimage, panelimage;
+    cv::Mat displayimage, stereoimage, disparityimage, panelimage;
     // allocate left & right color images for the panel
     cv::Mat color_left, color_right;
+    // setup frame numbering for saving images
+    int framenum;
 
     // Now for the main loop
     while (true) {
@@ -190,14 +193,18 @@ int main(int argc, char *argv[]) {
         cv::applyColorMap(filtered_disp_map, color_disparity, cv::COLORMAP_JET);
         //cv::Mat blank_disparity(color_disparity.size(),color_disparity.type(), cv::Scalar(0,0,0));
         // convert left & right images to color so they can be combined in a display
-        cv::cvtColor(rectif_left, color_left, cv::COLOR_GRAY2BGR);
+        //cv::cvtColor(rectif_left, color_left, cv::COLOR_GRAY2BGR);
         cv::cvtColor(rectif_right, color_right, cv::COLOR_GRAY2BGR);
-        cv::hconcat(color_left, color_right, stereoimage);
+        // cv::hconcat(color_left, color_right, stereoimage);
         // create a horizontal image with the color disparity on the left
-        cv::hconcat(noisy_disparity, color_disparity, disparityimage);
+        //cv::hconcat(noisy_disparity, color_disparity, disparityimage);
         // combine the stereo image and disparity images into a single panel
-        cv::vconcat(stereoimage, disparityimage, panelimage);
-        cv::imshow("panel", color_disparity);
+        //cv::vconcat(stereoimage, disparityimage, panelimage);
+        //cv::imshow("panel", color_disparity);
+
+        // create display image with right image and disparity image
+        cv::hconcat(color_right, color_disparity, displayimage);
+        cv::imshow("right image", color_right);
 
         // Display images and see if <ESC> or <SPACE> pressed
         char key = (char)cv::waitKey(1);
@@ -211,11 +218,13 @@ int main(int argc, char *argv[]) {
         if (videoOn) {
             // if video file hasn't been opened already, open it
             if (!videoisOpen) {
-                // setup video file
-                Video.open(Path + VideoName, FourCC, FramesPerSecond, panelimage.size(), isColor);
+                // setup video file(s)
+                VideoRGB.open(Path + "rgb_" + VideoName, FourCC, FramesPerSecond, color_right.size(), isColor);
+                VideoD.open(Path + "d_" + VideoName, FourCC, FramesPerSecond, filtered_disp_map.size(), false);
                 std::cout << "Saving output video with the following:" << std::endl;
-                std::cout << "Video: " << Path + VideoName << std::endl;
-                if (!Video.isOpened()) {
+                std::cout << "VideoRGB: " << PathRGB + VideoName << std::endl;
+                std::cout << "VideoD: " << PathD + VideoName << std::endl;
+                if (!VideoRGB.isOpened()) {
                     std::cout  << "Could not open the video file for writing." << std::endl;
                     return -1;
                 } else {
@@ -224,14 +233,26 @@ int main(int argc, char *argv[]) {
                 }
             }
             // video is on, capture the frame
-            Video << panelimage;
+            VideoRGB << color_right;
+            VideoD << filtered_disp_map;
+            // convert framenum into padded string for file naming
+            int numdigits = (int)ceil(log10(10000));
+            std::stringstream ss;
+            ss << std::setw(numdigits) << std::setfill('0') << framenum++;
+            std::string index = ss.str();
+            // save rgb and depth individual frames
+            cv::imwrite(PathRGB + index + ".png", color_right);
+            cv::imwrite(PathD + index + ".png", filtered_disp_map);
         }
     }
 
     // close all the windows
     cv::destroyAllWindows();
     // if the video is open, close the video file
-    if (videoisOpen) Video.release();
+    if (videoisOpen) {
+        VideoRGB.release();
+        VideoD.release();
+    }
 
     return EXIT_SUCCESS;
 }
