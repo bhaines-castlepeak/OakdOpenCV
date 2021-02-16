@@ -221,8 +221,8 @@ int main(int argc, char *argv[]) {
             ss << std::setw(numdigits) << std::setfill('0') << framenum++;
             std::string index = ss.str();
             // save rgb and depth individual frames
-            cv::imwrite(PathRGB + index + ".png", color_right);
-            cv::imwrite(PathD + index + ".png", filtered_disp_map);
+            cv::imwrite(rgbDir + index + ".png", color_right);
+            cv::imwrite(depthDir + index + ".png", filtered_disp_map);
         }
     }
 
