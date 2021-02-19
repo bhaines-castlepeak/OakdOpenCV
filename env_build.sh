@@ -16,11 +16,18 @@ sudo apt -y install \
     libboost-all-dev \
     libtiff-dev \
     libopenexr-dev \
-    gnupg \
-    python3.6
+    gnupg 
+    
+# install python 3.9
+sudo apt -y install \
+    software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt -y install \
+    python3.9
 
 
 # CMake
+cd ~/Documents
 wget https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3.tar.gz && \
     tar xf cmake-3.19.3.tar.gz && \
     cd cmake-3.19.3 && \
@@ -29,12 +36,12 @@ wget https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3.tar
 
 sudo make install
 
-cd && \
-    rm -r cmake-3.19.3 && \
+cd ~/Documents && \
     rm cmake-3.19.3.tar.gz
 
 # OpenCV 4.5
 # install OpenCV dependencies
+cd ~/Documents
 sudo apt -y install \
     build-essential \
     git \
@@ -63,10 +70,30 @@ sudo apt -y install \
     unzip \
     qtcreator \
     qt5-default \
-    libpcl-dev
+    libpcl-dev \
+    libavresample-dev \
+    libopenjpip-server \
+    libopenjp2-tools 
+    
+sudo pip install --upgrade pip
+
+sudo snap install ffmpeg
+
+# install gdal libraries for future
+# note: opencv cmake didn't automatically detect this install
+cd ~/Documents
+sudo apt -y install \
+    gdal-bin \
+    libgdal-dev
+
+# install QT for building OpenCV GUI apps
+# note: opencv cmake didn't automatically detect this install
+sudo apt -y install \
+    qtcreator \
+    qt5-default
 
 # start OpenCV build
-cd ~ && \
+cd ~/Documents && \
     wget -O opencv.zip https://github.com/opencv/opencv/archive/4.5.1.zip && \
     wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.1.zip
 # unpack
@@ -77,20 +104,23 @@ unzip opencv.zip && \
     # clean up the zip files
     rm opencv.zip && \
     rm opencv_contrib.zip 
-cd ~/opencv && \
+cd ~/Documents/opencv && \
     mkdir build && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=RELEASE \
-          -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+          -D OPENCV_EXTRA_MODULES_PATH=~/Documents/opencv_contrib/modules \
           -D OPENCV_ENABLE_NONFREE=ON \
-          -D BUILD_OPENCV_PYTHON3=TRUE .. && \
+          -D BUILD_OPENCV_PYTHON3=TRUE \
+          -D WITH_QT=5 \
+          -D WITH_QT=ON \
+          -D OPENCV_GENERATE_PKGCONFIG=ON .. && \
     make -j$(nproc)
 
 sudo make install
 
-    cd && \
-    rm -r opencv && \
-    rm -r opencv_contrib 
+    # cd && \
+    # rm -r opencv && \
+    # rm -r opencv_contrib 
 
 # Install DepthAI dependencies manually
 # RUN wget -qO- http://docs.luxonis.com/_static/install_dependencies.sh | bash
@@ -152,7 +182,7 @@ sudo apt install -y \
         usbutils \
         udev \
         && \
-    apt-get clean && \
+    apt-get clean 
 #     rm -rf /var/lib/apt/lists/*
 
 # # https://github.com/luxonis/depthai-docker/blob/master/Dockerfile-depthai#L11
