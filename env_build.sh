@@ -118,9 +118,105 @@ cd ~/Documents/opencv && \
 
 sudo make install
 
-    # cd && \
-    # rm -r opencv && \
-    # rm -r opencv_contrib 
+# build and install G2O libarary (RTAB recommended)
+cd
+sudo apt -y install libsuitesparse-dev
+cd ~/Documents && \
+   git clone https://github.com/RainerKuemmerle/g2o.git 
+cd g2o
+mkdir build
+cd build
+cmake -D BUILD_WITH_MARCH_NATIVE=OFF \
+      -D G2O_BUILD_APPS=OFF \
+      -D G2O_BUILD_EXAMPLES=OFF \
+      -D G2O_USE_OPENGL=OFF ..
+make -j$(nproc)
+sudo make install
+
+# Install GTSAM from Ubuntu PPA (RTAB recommended)
+sudo add-apt-repository -y ppa:borglab/gtsam-release-4.0
+sudo apt -y install libgtsam-dev libgtsam-unstable-dev
+
+# Install Geogram (AliceVision requirement)
+cd ~/Documents && \
+    git clone --recursive https://github.com/alicevision/geogram.git
+cd geogram
+mkdir build && cd build
+cmake \
+  -D CMAKE_BUILD_TYPE=Release                 \
+  -D GEOGRAM_WITH_TETGEN=OFF                  \
+  -D GEOGRAM_WITH_HLBFGS=OFF                  \
+  -D GEOGRAM_WITH_GRAPHICS=OFF                \
+  -D GEOGRAM_WITH_EXPLORAGRAM=OFF             \
+  -D GEOGRAM_WITH_LUA=OFF                     \
+  -D VORPALINE_PLATFORM="Linux64-gcc-dynamic" \
+  ..
+make -j$(nproc)
+sudo make install
+
+# Install AliceVision (RTAB requirement)
+sudo apt -y install \
+    libpng-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    libxxf86vm1 \
+    libxxf86vm-dev \
+    libxi-dev \
+    libxrandr-dev \
+    graphviz \
+    libeigen3-dev \
+    libceres-dev \
+    libflann-dev \
+    libopenimageio-dev \
+    liblapack-dev \
+    liblapacke-dev \
+    libatlas-base-dev \
+    libblas-dev \
+    liblapack-dev \
+    libhdf5-dev
+cd ~/Documents && \
+    git clone --recursive https://github.com/alicevision/AliceVision.git
+cd AliceVision
+mkdir build && cd build
+cmake \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D ALICEVISION_USE_CUDA=OFF \
+    -D AV_BUILD_CUDA=OFF \
+    ..
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+
+# Install Intel RealSense
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
+sudo add-apt-repository -y "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo focal main" -u
+sudo apt -y install librealsense2-dkms
+sudo apt -y install librealsense2-utils
+sudo apt -y install librealsense2-dev
+sudo apt -y install librealsense2-dbg
+
+
+# build and install RTAB-Map
+sudo apt -y update
+sudo apt -y install \
+    libsqlite3-dev \
+    libpcl-dev \
+    git \
+    libproj-dev \
+    libqt5svg5-dev \
+    libusb-1.0-0-dev\
+    libyaml-cpp-dev
+
+cd ~/Documents && \
+    git clone https://github.com/introlab/rtabmap.git rtabmap
+cd rtabmap/build
+cmake \
+    -D WITH_ALICEVISION=ON \
+    ..
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+
 
 # Install DepthAI dependencies manually
 # RUN wget -qO- http://docs.luxonis.com/_static/install_dependencies.sh | bash
