@@ -82,12 +82,14 @@ sudo pip install --upgrade pip
 sudo snap install ffmpeg
 
 # install gdal libraries for future
+# note: opencv cmake didn't automatically detect this install
 cd ~/Documents
 sudo apt -y install \
     gdal-bin \
     libgdal-dev
 
 # install QT for building OpenCV GUI apps
+# note: opencv cmake didn't automatically detect this install
 sudo apt -y install \
     qtcreator \
     qt5-default
@@ -210,6 +212,7 @@ sudo apt -y install \
 cd ~/Documents && \
     git clone https://github.com/introlab/rtabmap.git rtabmap
 cd rtabmap/build
+# have to build with GTSAM off or it will segfault.
 cmake \
     -D WITH_ALICEVISION=ON \
     -D WITH_GTSAM=OFF \
@@ -217,3 +220,32 @@ cmake \
 make -j$(nproc)
 sudo make install
 sudo ldconfig
+
+# depthai dependencies
+sudo apt -y install \
+    libpng-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    libdc1394-22-dev \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libgl1-mesa-glx \
+    usbutils \
+    less \
+    emacs \
+    build-essential \
+    cmake \
+    git \
+    tmux \
+    bash-completion \
+    command-not-found \
+    software-properties-common \
+    xsel \
+    xdg-user-dirs \
+    wget \
+    curl \
+    usbutils \
+    udev 
+
+
