@@ -1,3 +1,5 @@
+# notes:
+# I do not have CUDA (Nvidia GPU), so major libraries are built w/out CUDA support
 sudo apt -y update && \
      apt -y upgrade
 
@@ -16,11 +18,18 @@ sudo apt -y install \
     libboost-all-dev \
     libtiff-dev \
     libopenexr-dev \
-    gnupg \
-    python3.6
+    gnupg 
+    
+# install python 3.9
+sudo apt -y install \
+    software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt -y install \
+    python3.9
 
 
 # CMake
+cd ~/Documents
 wget https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3.tar.gz && \
     tar xf cmake-3.19.3.tar.gz && \
     cd cmake-3.19.3 && \
@@ -29,12 +38,12 @@ wget https://github.com/Kitware/CMake/releases/download/v3.19.3/cmake-3.19.3.tar
 
 sudo make install
 
-cd && \
-    rm -r cmake-3.19.3 && \
+cd ~/Documents && \
     rm cmake-3.19.3.tar.gz
 
 # OpenCV 4.5
 # install OpenCV dependencies
+cd ~/Documents
 sudo apt -y install \
     build-essential \
     git \
@@ -63,10 +72,28 @@ sudo apt -y install \
     unzip \
     qtcreator \
     qt5-default \
-    libpcl-dev
+    libpcl-dev \
+    libavresample-dev \
+    libopenjpip-server \
+    libopenjp2-tools 
+    
+sudo pip install --upgrade pip
+
+sudo snap install ffmpeg
+
+# install gdal libraries for future
+cd ~/Documents
+sudo apt -y install \
+    gdal-bin \
+    libgdal-dev
+
+# install QT for building OpenCV GUI apps
+sudo apt -y install \
+    qtcreator \
+    qt5-default
 
 # start OpenCV build
-cd ~ && \
+cd ~/Documents && \
     wget -O opencv.zip https://github.com/opencv/opencv/archive/4.5.1.zip && \
     wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.1.zip
 # unpack
@@ -77,103 +104,116 @@ unzip opencv.zip && \
     # clean up the zip files
     rm opencv.zip && \
     rm opencv_contrib.zip 
-cd ~/opencv && \
+cd ~/Documents/opencv && \
     mkdir build && \
     cd build && \
     cmake -D CMAKE_BUILD_TYPE=RELEASE \
-          -D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules \
+          -D OPENCV_EXTRA_MODULES_PATH=~/Documents/opencv_contrib/modules \
           -D OPENCV_ENABLE_NONFREE=ON \
-          -D BUILD_OPENCV_PYTHON3=TRUE .. && \
+          -D BUILD_OPENCV_PYTHON3=TRUE \
+          -D WITH_QT=5 \
+          -D WITH_QT=ON \
+          -D OPENCV_GENERATE_PKGCONFIG=ON .. && \
     make -j$(nproc)
 
 sudo make install
 
-    cd && \
-    rm -r opencv && \
-    rm -r opencv_contrib 
+# build and install G2O libarary (RTAB recommended)
+cd
+sudo apt -y install libsuitesparse-dev
+cd ~/Documents && \
+   git clone https://github.com/RainerKuemmerle/g2o.git 
+cd g2o
+mkdir build
+cd build
+cmake -D BUILD_WITH_MARCH_NATIVE=OFF \
+      -D G2O_BUILD_APPS=OFF \
+      -D G2O_BUILD_EXAMPLES=OFF \
+      -D G2O_USE_OPENGL=OFF ..
+make -j$(nproc)
+sudo make install
 
-# Install DepthAI dependencies manually
-# RUN wget -qO- http://docs.luxonis.com/_static/install_dependencies.sh | bash
+# Install GTSAM from Ubuntu PPA (RTAB recommended)
+sudo add-apt-repository -y ppa:borglab/gtsam-release-4.0
+sudo apt -y install libgtsam-dev libgtsam-unstable-dev
+
+# Install Geogram (AliceVision requirement)
+cd ~/Documents && \
+    git clone --recursive https://github.com/alicevision/geogram.git
+cd geogram
+mkdir build && cd build
+cmake \
+  -D CMAKE_BUILD_TYPE=Release                 \
+  -D GEOGRAM_WITH_TETGEN=OFF                  \
+  -D GEOGRAM_WITH_HLBFGS=OFF                  \
+  -D GEOGRAM_WITH_GRAPHICS=OFF                \
+  -D GEOGRAM_WITH_EXPLORAGRAM=OFF             \
+  -D GEOGRAM_WITH_LUA=OFF                     \
+  -D VORPALINE_PLATFORM="Linux64-gcc-dynamic" \
+  ..
+make -j$(nproc)
+sudo make install
+
+# Install AliceVision (RTAB requirement)
 sudo apt -y install \
-    python3 \
-    python3-pip \
-    udev \
-    git \
-    python3-numpy \
-    build-essential \
-    libgtk2.0-dev \
-    pkg-config \
-    libavcodec-dev \
-    libavformat-dev \
-    libswscale-dev \
-    python-dev \
-    libtbb2 \
-    libtbb-dev \
-    libjpeg-dev \
     libpng-dev \
+    libjpeg-dev \
     libtiff-dev \
-    libdc1394-22-dev \
-    ffmpeg \
-    libsm6 \
-    libxext6 \
-    libgl1-mesa-glx \
-    usbutils
+    libxxf86vm1 \
+    libxxf86vm-dev \
+    libxi-dev \
+    libxrandr-dev \
+    graphviz \
+    libeigen3-dev \
+    libceres-dev \
+    libflann-dev \
+    libopenimageio-dev \
+    liblapack-dev \
+    liblapacke-dev \
+    libatlas-base-dev \
+    libblas-dev \
+    liblapack-dev \
+    libhdf5-dev
+cd ~/Documents && \
+    git clone --recursive https://github.com/alicevision/AliceVision.git
+cd AliceVision
+mkdir build && cd build
+cmake \
+    -D CMAKE_BUILD_TYPE=Release \
+    -D ALICEVISION_USE_CUDA=OFF \
+    -D AV_BUILD_CUDA=OFF \
+    ..
+make -j$(nproc)
+sudo make install
+sudo ldconfig
 
-# # https://github.com/luxonis/depthai/issues/295#issuecomment-757087753
-# # add new sudo user
-# ENV USERNAME depthai
-# ENV HOME /home/$USERNAME
-# RUN useradd -m $USERNAME && \
-#         echo "$USERNAME:$USERNAME" | chpasswd && \
-#         usermod --shell /bin/bash $USERNAME && \
-#         usermod -aG sudo $USERNAME && \
-#         mkdir /etc/sudoers.d && \
-#         echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/$USERNAME && \
-#         chmod 0440 /etc/sudoers.d/$USERNAME && \
-#         # Replace 1000 with your user/group id
-#         usermod  --uid 1000 $USERNAME && \
-#         groupmod --gid 1000 $USERNAME
+# # Install Intel RealSense
+# sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE
+# sudo add-apt-repository -y "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo focal main" -u
+# sudo apt -y install librealsense2-dkms
+# sudo apt -y install librealsense2-utils
+# sudo apt -y install librealsense2-dev
+# sudo apt -y install librealsense2-dbg
 
-# ENV DEBIAN_FRONTEND noninteractive
-sudo apt install -y \
-        less \
-        emacs \
-        build-essential \
-        cmake \
-        git \
-        tmux \
-        bash-completion \
-        command-not-found \
-        software-properties-common \
-        xsel \
-        xdg-user-dirs \
-        wget \
-        curl \
-        usbutils \
-        udev \
-        && \
-    apt-get clean && \
-#     rm -rf /var/lib/apt/lists/*
 
-# # https://github.com/luxonis/depthai-docker/blob/master/Dockerfile-depthai#L11
-# RUN echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | tee /etc/udev/rules.d/80-movidius.rules
+# build and install RTAB-Map
+sudo apt -y update
+sudo apt -y install \
+    libsqlite3-dev \
+    libpcl-dev \
+    git \
+    libproj-dev \
+    libqt5svg5-dev \
+    libusb-1.0-0-dev\
+    libyaml-cpp-dev
 
-# # USER $USERNAME
-# WORKDIR /home/${USERNAME}
-# SHELL ["/bin/bash", "-c"]
-# RUN wget https://github.com/libusb/libusb/releases/download/v1.0.24/libusb-1.0.24.tar.bz2 && \
-#     tar xf libusb-1.0.24.tar.bz2 && \
-#     cd libusb-1.0.24 && \
-#     ./configure --disable-udev --prefix="$PWD/install_dir" && \
-#     make -j && \
-#     make install
-# ENV LD_LIBRARY_PATH="$PWD/libusb-1.0.24/install_dir/lib":$LD_LIBRARY_PATH
-
-# RUN pip3 install setuptools
-# RUN pip3 install scikit-build
-# RUN apt-get install -y libusb-0.1-4
-
-# RUN git clone https://github.com/luxonis/depthai.git
-# RUN cd depthai && \
-#     pip3 install -r requirements.txt
-    
+cd ~/Documents && \
+    git clone https://github.com/introlab/rtabmap.git rtabmap
+cd rtabmap/build
+cmake \
+    -D WITH_ALICEVISION=ON \
+    -D WITH_GTSAM=OFF \
+    ..
+make -j$(nproc)
+sudo make install
+sudo ldconfig
